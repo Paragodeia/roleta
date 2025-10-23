@@ -1,1 +1,344 @@
 # juntter.github.io
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roleta da Sorte - Juntter</title>
+    <!-- Carrega a fonte League Spartan --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;700&display=swap" rel="stylesheet">
+    <!-- Carrega o Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Define a fonte padrão e o amarelo da Juntter */
+        body {
+            font-family: 'League Spartan', sans-serif;
+            background-color: #f0f0f0; /* Um cinza claro para o fundo da página */
+        }
+        .juntter-yellow {
+            background-color: #ffca11;
+        }
+        .juntter-yellow-text {
+            color: #ffca11;
+        }
+        /* Estilo para o pino (triângulo) que aponta para o prêmio */
+        .pin {
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 30px solid #dc2626; /* Vermelho para destacar */
+            position: absolute;
+            top: -20px; /* Posiciona acima da roleta */
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10;
+            filter: drop-shadow(0px -2px 2px rgba(0,0,0,0.3));
+        }
+        /* Canvas para garantir que seja responsivo e quadrado */
+        canvas {
+            width: 100%;
+            height: auto;
+            max-width: 450px; /* Tamanho máximo da roleta */
+            aspect-ratio: 1 / 1;
+        }
+        /* Animação de fade-in para o modal */
+        .modal {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen p-4">
+
+    <!-- Logo da Juntter (agora a amarela) --><div class="mb-6">
+        <img src="https://juntter.com.br/wp-content/uploads/2025/09/logo_preta.png" alt="Logo Juntter" class="h-16 w-auto">
+    </div>
+
+    <!-- Container da Roleta e Pino --><div class="relative w-full max-w-[450px] flex items-center justify-center mb-8">
+        <div class="pin"></div>
+        <canvas id="rouletteCanvas"></canvas>
+    </div>
+
+    <!-- Botão Girar --><button id="spinButton" class="juntter-yellow text-black text-2xl font-bold py-4 px-12 rounded-lg shadow-lg transition-transform duration-150 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+        GIRAR
+    </button>
+
+    <!-- Modal de Resultado (Oculto por padrão) --><div id="resultModal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-6 z-20 hidden modal">
+        <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full text-center">
+            <h2 id="prizeTitle" class="text-2xl font-bold mb-4">Parabéns!</h2>
+            <div id="prizeMessage" class="text-lg text-gray-700 space-y-3">
+                <!-- Conteúdo do prêmio será inserido aqui pelo JS --></div>
+            <button id="closeModalButton" class="mt-6 bg-gray-800 text-white py-2 px-6 rounded-lg font-semibold hover:bg-gray-700 transition-colors">
+                Fechar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('rouletteCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinButton = document.getElementById('spinButton');
+        const resultModal = document.getElementById('resultModal');
+        const prizeTitle = document.getElementById('prizeTitle');
+        const prizeMessage = document.getElementById('prizeMessage');
+        const closeModalButton = document.getElementById('closeModalButton');
+
+        // Configurações da Roleta
+        const segments = [
+            { label: 'Juntter Base', color: '#ffca11', textColor: '#000000', probability: 0.1 },
+            { label: 'Caneta Juntter', color: '#000000', textColor: '#ffca11', probability: 5.0 },
+            { label: 'Doce Juntter', color: '#ffca11', textColor: '#000000', probability: 0.9 },
+            { label: 'Desconto na Fatura de Energia', color: '#000000', textColor: '#ffca11', probability: 42.0 },
+            { label: 'Taxa de 100k Liberada', color: '#ffca11', textColor: '#000000', probability: 52.0 },
+            { label: 'Juntter Smart', color: '#000000', textColor: '#ffca11', probability: 0.0 }
+        ];
+
+        const numSegments = segments.length;
+        const arcSize = (2 * Math.PI) / numSegments; // Cada segmento tem 60 graus (360/6)
+
+        let currentAngle = 0; // Ângulo de rotação atual do canvas
+        let isSpinning = false;
+        let finalWinnerSegmentIndex = null; // Armazena o índice do segmento vencedor após o cálculo
+
+        // Ajusta o tamanho do canvas (DPI)
+        function resizeCanvas() {
+            const size = Math.min(window.innerWidth * 0.9, 450);
+            canvas.width = size * window.devicePixelRatio;
+            canvas.height = size * window.devicePixelRatio;
+            canvas.style.width = `${size}px`;
+            canvas.style.height = `${size}px`;
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+        }
+
+        // Função para desenhar o texto com quebra de linha
+        function drawText(context, text, x, y, maxWidth, lineHeight, textColor, fontSize) {
+            context.fillStyle = textColor;
+            context.font = `bold ${fontSize}px "League Spartan", sans-serif`;
+            context.textAlign = 'center';
+            context.textBaseline = 'middle';
+
+            const words = text.split(' ');
+            let line = '';
+            let lines = [];
+
+            for (let n = 0; n < words.length; n++) {
+                let testLine = line + words[n] + ' ';
+                let metrics = context.measureText(testLine);
+                let testWidth = metrics.width;
+                if (testWidth > maxWidth && n > 0) {
+                    lines.push(line);
+                    line = words[n] + ' ';
+                } else {
+                    line = testLine;
+                }
+            }
+            lines.push(line);
+
+            // Ajusta a posição Y para centralizar o bloco de texto
+            let startY = y - ((lines.length - 1) * lineHeight) / 2;
+            for (let i = 0; i < lines.length; i++) {
+                context.fillText(lines[i].trim(), x, startY + i * lineHeight);
+            }
+        }
+
+
+        // Desenha a roleta estática (sem rotação inicial do canvas)
+        function drawRouletteContent() {
+            const radius = canvas.width / (2 * window.devicePixelRatio);
+
+            segments.forEach((segment, i) => {
+                const startAngle = i * arcSize;
+                const endAngle = (i + 1) * arcSize;
+
+                // Desenha a fatia
+                ctx.beginPath();
+                ctx.moveTo(0, 0); // Centro
+                ctx.arc(0, 0, radius * 0.95, startAngle, endAngle); // Desenha o arco
+                ctx.closePath();
+                ctx.fillStyle = segment.color;
+                ctx.fill();
+                ctx.strokeStyle = '#333'; // Borda leve entre fatias
+                ctx.stroke();
+
+                // Desenha o texto
+                ctx.save();
+
+                // Rotaciona o canvas para escrever o texto
+                const textAngle = startAngle + arcSize / 2; // Centro do segmento
+                ctx.rotate(textAngle);
+
+                // Posiciona o texto a uma distância do centro
+                const textX = radius * 0.65;
+                const textY = 0; // No centro vertical (após rotação)
+                const textMaxWidth = radius * 0.5; // Aproximadamente metade do raio para o texto
+                const textLineHeight = 20; // Espaçamento entre as linhas
+                const fontSize = 18; // Tamanho da fonte
+
+                // Chama a função para desenhar o texto com quebra de linha
+                drawText(ctx, segment.label, textX, textY, textMaxWidth, textLineHeight, segment.textColor, fontSize);
+
+                ctx.restore();
+            });
+
+            // Círculo central
+            ctx.beginPath();
+            ctx.arc(0, 0, radius * 0.15, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ffca11'; // Amarelo Juntter
+            ctx.fill();
+            ctx.strokeStyle = '#000000';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        // Desenha a roleta com uma rotação específica
+        function drawRotatedRoulette(degrees) {
+            const radius = canvas.width / (2 * window.devicePixelRatio);
+            ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o canvas
+
+            ctx.save();
+            ctx.translate(radius, radius); // Move para o centro
+            ctx.rotate(degrees * Math.PI / 180); // Rotaciona
+
+            drawRouletteContent(); // Desenha o conteúdo da roleta
+
+            ctx.restore();
+        }
+
+        // Determina o prêmio com base na probabilidade
+        function calculatePrizeIndex() {
+            const rand = Math.random() * 100;
+            let cumulativeProb = 0;
+
+            for (let i = 0; i < segments.length; i++) {
+                cumulativeProb += segments[i].probability;
+                if (rand <= cumulativeProb) {
+                    // Garante que nunca caia no prêmio 0% (índice 5: Juntter Smart)
+                    if (i === 5) {
+                        return 4; // Força para o prêmio anterior (Taxa de 100k Liberada)
+                    }
+                    return i; // Retorna o índice do vencedor
+                }
+            }
+            return 4; // Fallback caso algo dê errado, cai no mais provável
+        }
+
+        // Mostra o resultado no modal
+        function showResult() {
+            const prize = segments[finalWinnerSegmentIndex]; // Usa o índice do vencedor
+            prizeTitle.textContent = 'Parabéns!';
+
+            // Define a mensagem com base no prêmio
+            switch (prize.label) {
+                case 'Desconto na Fatura de Energia':
+                    prizeMessage.innerHTML = `
+                        <p class="font-bold text-xl mb-3">${prize.label}</p>
+                        <p>Clique <a href="https://digital.igreenenergy.com.br/?id=92945&desc=8&sendcontract=true" target="_blank" class="text-blue-600 font-bold underline hover:text-blue-800">aqui</a> para garantir o seu desconto na energia.</p>
+                        <p class="mt-4">Fale com o representante da Juntter caso tenha alguma dúvida.</p>
+                    `;
+                    break;
+                case 'Taxa de 100k Liberada':
+                    prizeMessage.innerHTML = `
+                        <p class="font-bold text-xl mb-3">${prize.label}</p>
+                        <p>Condição válida para novos cadastros na Pagbank.</p>
+                    `;
+                    break;
+                default:
+                    // Juntter Base, Caneta Juntter, Doce Juntter, Juntter Smart (embora este último não caia)
+                    prizeTitle.textContent = `Você ganhou: ${prize.label}!`;
+                    prizeMessage.innerHTML = `
+                        <p>Mostre a tela do seu celular para o representante da Juntter e retire seu prêmio!</p>
+                    `;
+            }
+
+            resultModal.classList.remove('hidden');
+            // O botão Girar só será reabilitado ao fechar o modal
+        }
+
+        // Função principal de giro
+        function spin() {
+            if (isSpinning) return;
+            isSpinning = true;
+            spinButton.disabled = true;
+
+            finalWinnerSegmentIndex = calculatePrizeIndex(); // Calcula o índice vencedor
+
+            // Calcula o ângulo de parada
+            // (360 / numSegments) é o tamanho em graus de um segmento
+            const degreesPerSegment = 360 / numSegments;
+
+            // CORREÇÃO: O pino está no topo (270 graus), não à direita (0/360).
+            // A lógica anterior estava mirando o lugar errado (360 - angulo).
+            // A lógica correta deve mirar (270 - angulo).
+
+            // 1. Calcula o ângulo base do segmento vencedor (ex: Seg 0 = 0, Seg 1 = 60)
+            const targetSegmentBaseAngle = finalWinnerSegmentIndex * degreesPerSegment;
+
+            // 2. Adiciona um offset aleatório para cair "dentro" do segmento, não na linha.
+            // (Valor entre 5 e 55, para um segmento de 60)
+            const randomOffset = Math.random() * (degreesPerSegment - 10) + 5;
+
+            // 3. Este é o ângulo-alvo (como desenhado) que queremos que pare no pino (ex: 60 + 30 = 90 graus)
+            const targetAngle_as_drawn = targetSegmentBaseAngle + randomOffset;
+
+            // 4. Calcula a rotação necessária. Queremos que o targetAngle_as_drawn pare em 270 graus (topo).
+            // Rotação + targetAngle_as_drawn = 270
+            // Rotação = 270 - targetAngle_as_drawn
+            const targetRotation = 270 - targetAngle_as_drawn;
+
+            // 5. Adiciona os giros completos (10 voltas) + a rotação alvo
+            const finalRotationDegrees = (360 * 10) + targetRotation;
+
+
+            let startTime = null;
+            const spinDuration = 5000; // 5 segundos
+
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const elapsed = timestamp - startTime;
+
+                if (elapsed >= spinDuration) {
+                    // Parada final
+                    currentAngle = finalRotationDegrees % 360; // Mantém o ângulo entre 0-359
+                    drawRotatedRoulette(currentAngle);
+                    showResult();
+                    isSpinning = false; // Permite outro giro após o modal ser fechado
+                    return;
+                }
+
+                // Fórmula de Ease-Out (desaceleração)
+                const progress = elapsed / spinDuration;
+                const easeProgress = 1 - Math.pow(1 - progress, 4); // Cubic ease-out
+
+                currentAngle = (finalRotationDegrees * easeProgress) % 360;
+                drawRotatedRoulette(currentAngle);
+
+                requestAnimationFrame(animate);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // Event Listeners
+        spinButton.addEventListener('click', spin);
+
+        closeModalButton.addEventListener('click', () => {
+            resultModal.classList.add('hidden');
+            spinButton.disabled = false; // Reabilita o botão
+        });
+
+        // Inicializa e desenha a roleta no carregamento
+        window.addEventListener('resize', () => {
+            resizeCanvas();
+            drawRotatedRoulette(currentAngle); // Redesenha na posição atual
+        });
+
+        resizeCanvas();
+        drawRotatedRoulette(currentAngle); // Desenho inicial
+    </script>
+</body>
+</html>
+
