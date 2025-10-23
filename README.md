@@ -52,8 +52,8 @@
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-    <!-- Logo da Juntter (agora a amarela) --><div class="mb-6 flex justify-center">
-        <img src="https3_3a_2f_2fstorage.googleapis.com_2fasync-uploads_2fprod_2fd43d526e-214e-4f7f-8c76-d621b162f275_2fImagem_20do_20WhatsApp_20de_202024-05-18_20_c3_a0s_2015.34.42_5f271f25-83e7-4c4f-9e79-50280f9687e1.jpg" alt="Logo Juntter" class="h-16 w-auto">
+    <!-- Logo da Juntter (agora a amarela) --><div class="mb-6 w-full flex justify-center">
+        <img src="https3_3a_2f_2fstorage.googleapis.com_2fasync-uploads_2fprod_2fd43d526e-214e-4f7f-8c76-d621b162f275_2fImagem_20do_20WhatsApp_20de_202024-05-18_20_c3_a0s_2015.34.42_5f271f25-83e7-4c4f-9c79-50280f9687e1.jpg" alt="Logo Juntter" class="h-16 w-auto">
     </div>
 
     <!-- Container da Roleta e Pino --><div class="relative w-full max-w-[450px] flex items-center justify-center mb-8">
@@ -339,5 +339,6 @@
     </script>
 </body>
 </html>
+
 
 
