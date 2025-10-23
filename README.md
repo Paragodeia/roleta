@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -12,7 +11,7 @@
         /* Define a fonte padrão e o amarelo da Juntter */
         body {
             font-family: 'League Spartan', sans-serif;
-            background-color: #f0f0f0; /* Um cinza claro para o fundo da página */
+            background-color: #000000; /* Um cinza claro para o fundo da página */
         }
         .juntter-yellow {
             background-color: #ffca11;
