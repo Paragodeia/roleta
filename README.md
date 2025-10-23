@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -11,7 +12,7 @@
         /* Define a fonte padrão e o amarelo da Juntter */
         body {
             font-family: 'League Spartan', sans-serif;
-            background-color: #000000; /* Um cinza claro para o fundo da página */
+            background-color: #f0f0f0; /* Um cinza claro para o fundo da página */
         }
         .juntter-yellow {
             background-color: #ffca11;
@@ -52,7 +53,7 @@
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-    <!-- Logo da Juntter (agora a amarela) --><div class="mb-6"; style="text-align: center;>
+    <!-- Logo da Juntter (agora a amarela) --><div style="text-align: center; class="mb-6">
         <img src="https://juntter.com.br/wp-content/uploads/2025/09/logo_preta.png" alt="Logo Juntter" class="h-16 w-auto">
     </div>
 
@@ -339,4 +340,3 @@
     </script>
 </body>
 </html>
-
