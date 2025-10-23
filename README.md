@@ -28,7 +28,7 @@
             border-right: 20px solid transparent;
             border-top: 30px solid #dc2626; /* Vermelho para destacar */
             position: absolute;
-            top: -20px; /* Posiciona acima da roleta */
+            top: -15px; /* Posiciona acima da roleta */
             left: 50%;
             transform: translateX(-50%);
             z-index: 10;
@@ -53,8 +53,8 @@
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
 
-    <!-- Logo da Juntter (agora a amarela) --><div style="text-align: center; class="mb-6">
-        <img src="https://juntter.com.br/wp-content/uploads/2025/09/logo_preta.png" alt="Logo Juntter" class="h-16 w-auto">
+    <!-- Logo da Juntter (agora a amarela) --><div class="mb-6 flex justify-center">
+        <img src="https3_3a_2f_2fstorage.googleapis.com_2fasync-uploads_2fprod_2fd43d526e-214e-4f7f-8c76-d621b162f275_2fImagem_20do_20WhatsApp_20de_202024-05-18_20_c3_a0s_2015.34.42_5f271f25-83e7-4c4f-9e79-50280f9687e1.jpg" alt="Logo Juntter" class="h-16 w-auto">
     </div>
 
     <!-- Container da Roleta e Pino --><div class="relative w-full max-w-[450px] flex items-center justify-center mb-8">
@@ -95,10 +95,10 @@
             { label: 'Taxa de 100k Liberada', color: '#ffca11', textColor: '#000000', probability: 52.0 },
             { label: 'Juntter Smart', color: '#000000', textColor: '#ffca11', probability: 0.0 }
         ];
-
+        
         const numSegments = segments.length;
         const arcSize = (2 * Math.PI) / numSegments; // Cada segmento tem 60 graus (360/6)
-
+        
         let currentAngle = 0; // Ângulo de rotação atual do canvas
         let isSpinning = false;
         let finalWinnerSegmentIndex = null; // Armazena o índice do segmento vencedor após o cálculo
@@ -148,7 +148,7 @@
         // Desenha a roleta estática (sem rotação inicial do canvas)
         function drawRouletteContent() {
             const radius = canvas.width / (2 * window.devicePixelRatio);
-
+            
             segments.forEach((segment, i) => {
                 const startAngle = i * arcSize;
                 const endAngle = (i + 1) * arcSize;
@@ -165,11 +165,11 @@
 
                 // Desenha o texto
                 ctx.save();
-
+                
                 // Rotaciona o canvas para escrever o texto
                 const textAngle = startAngle + arcSize / 2; // Centro do segmento
                 ctx.rotate(textAngle);
-
+                
                 // Posiciona o texto a uma distância do centro
                 const textX = radius * 0.65;
                 const textY = 0; // No centro vertical (após rotação)
@@ -179,7 +179,7 @@
 
                 // Chama a função para desenhar o texto com quebra de linha
                 drawText(ctx, segment.label, textX, textY, textMaxWidth, textLineHeight, segment.textColor, fontSize);
-
+                
                 ctx.restore();
             });
 
@@ -197,13 +197,13 @@
         function drawRotatedRoulette(degrees) {
             const radius = canvas.width / (2 * window.devicePixelRatio);
             ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o canvas
-
+            
             ctx.save();
             ctx.translate(radius, radius); // Move para o centro
             ctx.rotate(degrees * Math.PI / 180); // Rotaciona
-
+            
             drawRouletteContent(); // Desenha o conteúdo da roleta
-
+            
             ctx.restore();
         }
 
@@ -229,7 +229,7 @@
         function showResult() {
             const prize = segments[finalWinnerSegmentIndex]; // Usa o índice do vencedor
             prizeTitle.textContent = 'Parabéns!';
-
+            
             // Define a mensagem com base no prêmio
             switch (prize.label) {
                 case 'Desconto na Fatura de Energia':
@@ -252,7 +252,7 @@
                         <p>Mostre a tela do seu celular para o representante da Juntter e retire seu prêmio!</p>
                     `;
             }
-
+            
             resultModal.classList.remove('hidden');
             // O botão Girar só será reabilitado ao fechar o modal
         }
@@ -264,11 +264,11 @@
             spinButton.disabled = true;
 
             finalWinnerSegmentIndex = calculatePrizeIndex(); // Calcula o índice vencedor
-
+            
             // Calcula o ângulo de parada
             // (360 / numSegments) é o tamanho em graus de um segmento
             const degreesPerSegment = 360 / numSegments;
-
+            
             // CORREÇÃO: O pino está no topo (270 graus), não à direita (0/360).
             // A lógica anterior estava mirando o lugar errado (360 - angulo).
             // A lógica correta deve mirar (270 - angulo).
@@ -279,15 +279,15 @@
             // 2. Adiciona um offset aleatório para cair "dentro" do segmento, não na linha.
             // (Valor entre 5 e 55, para um segmento de 60)
             const randomOffset = Math.random() * (degreesPerSegment - 10) + 5;
-
+            
             // 3. Este é o ângulo-alvo (como desenhado) que queremos que pare no pino (ex: 60 + 30 = 90 graus)
             const targetAngle_as_drawn = targetSegmentBaseAngle + randomOffset;
-
+            
             // 4. Calcula a rotação necessária. Queremos que o targetAngle_as_drawn pare em 270 graus (topo).
             // Rotação + targetAngle_as_drawn = 270
             // Rotação = 270 - targetAngle_as_drawn
             const targetRotation = 270 - targetAngle_as_drawn;
-
+            
             // 5. Adiciona os giros completos (10 voltas) + a rotação alvo
             const finalRotationDegrees = (360 * 10) + targetRotation;
 
@@ -298,7 +298,7 @@
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const elapsed = timestamp - startTime;
-
+                
                 if (elapsed >= spinDuration) {
                     // Parada final
                     currentAngle = finalRotationDegrees % 360; // Mantém o ângulo entre 0-359
@@ -311,10 +311,10 @@
                 // Fórmula de Ease-Out (desaceleração)
                 const progress = elapsed / spinDuration;
                 const easeProgress = 1 - Math.pow(1 - progress, 4); // Cubic ease-out
-
+                
                 currentAngle = (finalRotationDegrees * easeProgress) % 360;
                 drawRotatedRoulette(currentAngle);
-
+                
                 requestAnimationFrame(animate);
             }
 
@@ -323,7 +323,7 @@
 
         // Event Listeners
         spinButton.addEventListener('click', spin);
-
+        
         closeModalButton.addEventListener('click', () => {
             resultModal.classList.add('hidden');
             spinButton.disabled = false; // Reabilita o botão
@@ -334,9 +334,11 @@
             resizeCanvas();
             drawRotatedRoulette(currentAngle); // Redesenha na posição atual
         });
-
+        
         resizeCanvas();
         drawRotatedRoulette(currentAngle); // Desenho inicial
     </script>
 </body>
 </html>
+
+
